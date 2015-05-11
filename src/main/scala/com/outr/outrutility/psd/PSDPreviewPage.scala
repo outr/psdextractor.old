@@ -50,6 +50,28 @@ class PSDPreviewPage extends Webpage {
 
   val scalaName = new tag.Input
 
+  def outline(nodeOption: Option[PreviewNode]) = nodeOption match {
+    case Some(node) => {
+      outlineDiv.style.left := node.style.left()
+      outlineDiv.style.top := node.style.top()
+      outlineDiv.style.width := node.w.px
+      outlineDiv.style.height := node.h.px
+      outlineDiv.style.display := Display.Block
+    }
+    case None => outlineDiv.style.display := Display.None
+  }
+
+  val outlineDiv = new tag.Div {
+    style.position := Position.Absolute
+    style.outlineColor := Color.Red
+    style.outlineOffset := 1.px
+    style.outlineStyle := LineStyle.Solid
+    style.outlineWidth := 2.px
+    style.zIndex := ZIndex(5000)
+    style.display := Display.None
+  }
+  body.contents += outlineDiv
+
   body.contents += new tag.Div {
     style.position := Position.Absolute
     style.right := 20.px
@@ -212,6 +234,15 @@ class PSDLayerManager extends tag.Div(id = "layer_manager") {
 class PSDNodeLayer(val node: PreviewNode) extends tag.Div {
   val visibility = new tag.Input(inputType = InputType.CheckBox, checked = true)
   val nodeName = new tag.Input(value = node.entry.getString("name"))
+  nodeName.focusEvent := RealtimeEvent()
+  nodeName.blurEvent := RealtimeEvent()
+
+  nodeName.focusEvent.on {
+    case evt => node.preview.outline(Some(node))
+  }
+  nodeName.blurEvent.on {
+    case evt => node.preview.outline(None)
+  }
 
   style.marginAll(5.px)
   node match {
@@ -240,6 +271,7 @@ class PSDNodeLayer(val node: PreviewNode) extends tag.Div {
 }
 
 trait PreviewNode extends BodyChild {
+  def preview: PSDPreviewPage
   var layer: PSDNodeLayer = _
 
   val adjustX = 19
@@ -261,13 +293,13 @@ trait PreviewNode extends BodyChild {
   def entry: JsonValue
 }
 
-class PreviewText(val entry: JsonValue, page: PSDPreviewPage) extends tag.Div with PreviewNode {
+class PreviewText(val entry: JsonValue, val preview: PSDPreviewPage) extends tag.Div with PreviewNode {
   val text = entry.get("text")
   val value = text.getString("value")
   val font = text.get("font")
   val fontName = font.getString("name")
   val (fontFamily, fontWeight) = fontName match {
-    case s if s.indexOf('-') != -1 => (cleanFamily(s.substring(0, s.indexOf('-'))), s.substring(s.indexOf('-') + 1))
+    case s if s.indexOf('-') != -1 => (cleanFamily(s.substring(0, s.lastIndexOf('-'))), s.substring(s.lastIndexOf('-') + 1))
     case s => (cleanFamily(s), "Normal")
   }
   val fontWeightValue = fontWeight.toLowerCase match {
@@ -280,12 +312,13 @@ class PreviewText(val entry: JsonValue, page: PSDPreviewPage) extends tag.Div wi
     case "bold" => 700
     case "extrabold" => 800
     case "ultrabold" => 900
+    case _ => 400
   }
   val fontSize = font.get("sizes").asIntArray()(0)
   val colorArray = font.get("colors").get(0).asIntArray()
   val color = Color.immutable(colorArray(0), colorArray(1), colorArray(2), colorArray(3) / 255.0)
 
-  WebFontLoader(page).google(List(s"$fontFamily:$fontWeightValue"))
+  WebFontLoader(preview).google(List(s"$fontFamily:$fontWeightValue"))
 
   val transform = text.get("transform")
 
@@ -305,7 +338,7 @@ class PreviewText(val entry: JsonValue, page: PSDPreviewPage) extends tag.Div wi
   def cleanFamily(f: String) = f.replaceAll("([A-Z]{1})", " $1").trim
 }
 
-class PreviewImage(val entry: JsonValue, page: PSDPreviewPage) extends tag.Img with PreviewNode {
-  val file = new File(page.directory(), s"${entry.getString("name")}_${entry.getInt("index")}.png")
+class PreviewImage(val entry: JsonValue, val preview: PSDPreviewPage) extends tag.Img with PreviewNode {
+  val file = new File(preview.directory(), s"${entry.getString("name")}_${entry.getInt("index")}.png")
   src := EncodedImages.encode(file)
 }

@@ -33,38 +33,37 @@ object PSDExporter {
             val value = text.value
             val fontFamily = text.fontFamily.replaceAll(" ", "")
             val color = s"${text.color.hex.rgb.substring(1)}${text.color.hex.alpha}".toUpperCase
-            s"""new Label("$value", Styles(Fonts.${fontFamily}.${text.fontWeight}.${numbers2Words(text.fontSize.toString)})).color(Color.valueOf("$color"))"""
+            s"""new Label("$value", app.styles(app.fonts.${fontFamily}.${text.fontWeight}.${numbers2Words(text.fontSize.toString)})).color(Color.valueOf("$color"))"""
           }
-          case image: PreviewImage => s"""new Image(Textures.Icons.${name.replaceAll(" ", "")}).sized(${node.w}, ${node.h})"""
+          case image: PreviewImage => s"""new Image(app.textures.Icons.${name.replaceAll(" ", "")}).sized(${node.w}, ${node.h})"""
         }
-        constructor += s".positioned(${node.x}, ${node.y})"
+        constructor += s".positioned(${node.x}, ${node.y - 6})"
         if (node.opacity != 1.0f) {
           constructor += s".alpha(${node.opacity}f)"
         }
-        construction += s"  lazy val $scalaName = $constructor.positioned(${node.x}, ${node.y - 6})"
+        construction += s"  lazy val $scalaName = $constructor"
         add += s"    stage.addActor($scalaName)"
       }
     }
 
     // Create Scala code
     val scalaCode =
-      s"""
-         |package $packageName
+      s"""package $packageName
          |
          |import com.badlogic.gdx.graphics.Color
          |import com.badlogic.gdx.scenes.scene2d.ui._
+         |import com.gotadawul.mobile.AppSupport
          |import com.gotadawul.mobile.visual._
          |import com.outr.gl._
          |import com.outr.gl.screen.BaseScreen
          |
-         |object ${page.scalaName.value()} extends BaseScreen {
+         |class ${page.scalaName.value()} extends BaseScreen with AppSupport {
          |${construction.mkString("\n")}
          |
          |  override def init() = {
          |${add.mkString("\n")}
          |  }
-         |}
-       """.stripMargin
+         |}""".stripMargin
 
     // Make the directories
     outputDirectory.mkdirs()
@@ -75,7 +74,7 @@ object PSDExporter {
     // Copy resources to resources directory
     resourceDirectory.mkdirs()
     nodes.foreach {
-      case image: PreviewImage => IO.copy(image.file, new File(resourceDirectory, s"${image.layer.nodeName.value()}.png"))
+      case image: PreviewImage => IO.copy(image.file, new File(resourceDirectory, s"${image.layer.nodeName.value().toLowerCase}.png"))
       case _ => // Ignore everything else
     }
   }
