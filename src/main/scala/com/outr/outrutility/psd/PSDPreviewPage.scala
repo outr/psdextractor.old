@@ -8,8 +8,10 @@ import org.hyperscala.html.attributes.InputType
 import org.hyperscala.html.constraints.BodyChild
 import org.hyperscala.html.tag.Br
 import org.hyperscala.jquery.Gritter
+import org.hyperscala.jquery.ui.jQueryUI
 import org.hyperscala.module.EncodedImages
 import org.hyperscala.realtime._
+import org.hyperscala.ui.{BusyDialog, ConfirmDialog}
 import org.hyperscala.ui.module.WebFontLoader
 import org.hyperscala.ui.widgets.FileUploader
 import org.hyperscala.web.Webpage
@@ -27,6 +29,9 @@ class PSDPreviewPage extends Webpage {
   require(Realtime)
   require(WebFontLoader)
   require(Gritter)
+  require(jQueryUI)
+
+  this.connectStandard()
 
   val directory = Property[File]()
 
@@ -139,7 +144,11 @@ class PSDPreviewPage extends Webpage {
     }
   }
 
-  def export() = {}
+  def export() = ConfirmDialog.show(this, "Are you sure you want to export this?", "Confirm Export") {
+    BusyDialog(this, "Exporting...") {
+      PSDExporter.export(this, new File("resourceDir"))
+    }
+  }
 }
 
 class PSDPreview(val width: Int, val height: Int) extends tag.Div(id = "preview") {
@@ -239,6 +248,7 @@ trait PreviewNode extends BodyChild {
   val y = entry.getInt("top") + adjustY
   val w = entry.getInt("width")
   val h = entry.getInt("height")
+  val opacity = entry.getFloat("opacity")
 
   style.position := Position.Absolute
   style.left := x.px

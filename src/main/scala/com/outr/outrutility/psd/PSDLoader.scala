@@ -14,11 +14,6 @@ import scala.collection.JavaConversions._
  * @author Matt Hicks <matt@outr.com>
  */
 object PSDLoader {
-//  def main(args: Array[String]): Unit = {
-//    load("StockMarket", new File("work/design/PSD/1 Stock Market.psd.output"))
-//    load("InputTrades", new File("work/design/PSD/15 Input Trades.psd.output"))
-//  }
-
   def load(screenName: String, directory: File) = {
     if (!directory.isDirectory) throw new RuntimeException(s"${directory.getAbsolutePath} is not a directory.")
 
