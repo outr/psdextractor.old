@@ -276,15 +276,15 @@ trait PreviewNode extends BodyChild {
 
   val adjustX = 19
   val adjustY = 11
-  val x = entry.getInt("left") + adjustX
-  val y = entry.getInt("top") + adjustY
+  val x = entry.getInt("left")
+  val y = entry.getInt("top")
   val w = entry.getInt("width")
   val h = entry.getInt("height")
   val opacity = entry.getFloat("opacity")
 
   style.position := Position.Absolute
-  style.left := x.px
-  style.top := y.px
+  style.left := (x + adjustX).px
+  style.top := (y + adjustY).px
 //  style.width := w.px
 //  style.height := h.px
   style.zIndex := ZIndex(1000 - entry.getInt("index"))
@@ -298,9 +298,13 @@ class PreviewText(val entry: JsonValue, val preview: PSDPreviewPage) extends tag
   val value = text.getString("value")
   val font = text.get("font")
   val fontName = font.getString("name")
-  val (fontFamily, fontWeight) = fontName match {
+  val (fontFamilySimple, fontWeight) = fontName match {
     case s if s.indexOf('-') != -1 => (cleanFamily(s.substring(0, s.lastIndexOf('-'))), s.substring(s.lastIndexOf('-') + 1))
     case s => (cleanFamily(s), "Normal")
+  }
+  val fontFamily = fontFamilySimple match {
+    case "Semibold" => "SemiBold"
+    case s => s
   }
   val fontWeightValue = fontWeight.toLowerCase match {
     case "ultralight" => 100
@@ -325,8 +329,8 @@ class PreviewText(val entry: JsonValue, val preview: PSDPreviewPage) extends tag
   val xx = math.round(transform.getDouble("xx")).toInt
   val yy = math.round(transform.getDouble("yy")).toInt
 
-  style.left := (x - xx).px
-  style.top := (y - yy).px
+  style.left := (x + adjustX - xx).px
+  style.top := (y + adjustY - yy).px
   style.fontFamily := fontFamily
   style.fontWeight := FontWeight(fontWeightValue.toString)
   style.fontSize := fontSize.px
