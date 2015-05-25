@@ -2,7 +2,7 @@ package com.outr.outrutility.psd
 
 import java.io.File
 
-import org.hyperscala.css.attributes.Display
+import org.hyperscala.css.attributes.{Visibility, Display}
 import org.powerscala.IO
 
 import scala.collection.immutable.ListMap
@@ -21,7 +21,7 @@ object PSDExporter {
     val preview = page.psdPreview.get
     val width = preview.width
     val height = preview.height
-    val nodes = preview.byType[PreviewNode].toList.filter(n => n.layer.visibility.checked()).reverse
+    val nodes = preview.byType[PreviewNode].toList.filter(n => n.layer.visibility.style.visibility() != Visibility.Hidden).reverse
     val construction = ListBuffer.empty[String]
     val add = ListBuffer.empty[String]
     nodes.foreach {
@@ -98,7 +98,9 @@ object PSDExporter {
   }
 
   private val numberMap = ListMap(
+    "10" -> "Ten",
     "14" -> "Fourteen",
+    "18" -> "Eighteen",
     "20" -> "Twenty",
     "24" -> "TwentyFour",
     "28" -> "TwentyEight",

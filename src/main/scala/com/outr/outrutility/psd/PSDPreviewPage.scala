@@ -4,9 +4,11 @@ import java.io.{FileReader, File}
 
 import com.badlogic.gdx.utils.{JsonValue, JsonReader}
 import org.hyperscala.css.attributes._
+import org.hyperscala.event.Key
 import org.hyperscala.html.attributes.InputType
 import org.hyperscala.html.constraints.BodyChild
 import org.hyperscala.html.tag.Br
+import org.hyperscala.javascript.dsl._
 import org.hyperscala.jquery.Gritter
 import org.hyperscala.jquery.ui.jQueryUI
 import org.hyperscala.module.EncodedImages
@@ -21,6 +23,8 @@ import org.powerscala.property.Property
 import scala.collection.JavaConversions._
 
 import org.hyperscala.html._
+
+import org.hyperscala.jquery.dsl._
 
 /**
  * @author Matt Hicks <matt@outr.com>
@@ -213,7 +217,7 @@ class PSDLayerManager extends tag.Div(id = "layer_manager") {
   style.width := 350.px
   style.right := 10.px
   style.top := 120.px
-  style.position := Position.Absolute
+  style.position := Position.Fixed
   style.borderStyle := LineStyle.Solid
   style.borderWidth := 1.px
   style.borderColor := Color.Black
@@ -225,17 +229,35 @@ class PSDLayerManager extends tag.Div(id = "layer_manager") {
 
   def add(node: PreviewNode) = contents += new PSDNodeLayer(node)
 
-  def showAll() = byType[PSDNodeLayer].foreach(l => l.visibility.checked := true)
-  def hideAll() = byType[PSDNodeLayer].foreach(l => l.visibility.checked := false)
-  def onlyImages() = byType[PSDNodeLayer].foreach(l => l.visibility.checked := l.node.isInstanceOf[PreviewImage])
-  def onlyText() = byType[PSDNodeLayer].foreach(l => l.visibility.checked := l.node.isInstanceOf[PreviewText])
+  def showAll() = byType[PSDNodeLayer].foreach(l => l.visible(b = true))
+  def hideAll() = byType[PSDNodeLayer].foreach(l => l.visible(b = false))
+  def onlyImages() = byType[PSDNodeLayer].foreach(l => l.visible(l.node.isInstanceOf[PreviewImage]))
+  def onlyText() = byType[PSDNodeLayer].foreach(l => l.visible(l.node.isInstanceOf[PreviewText]))
 }
 
 class PSDNodeLayer(val node: PreviewNode) extends tag.Div {
-  val visibility = new tag.Input(inputType = InputType.CheckBox, checked = true)
+  def visible(b: Boolean) = if (b) {
+    visibility.style.visibility := Visibility.Visible
+  } else {
+    visibility.style.visibility := Visibility.Hidden
+  }
+
+  def isVisible = visibility.style.visibility() != Visibility.Hidden
+
+  val visibility = new tag.Span(content = "✔")
   val nodeName = new tag.Input(value = node.entry.getString("name"))
   nodeName.focusEvent := RealtimeEvent()
   nodeName.blurEvent := RealtimeEvent()
+  $(nodeName).keyDown(onKey(Key.Return)(nodeName.callback {
+    visible(!isVisible)
+    val index = parent.asInstanceOf[tag.Div].contents.indexOf(this)
+    try {
+      val next = parent.asInstanceOf[tag.Div].contents(index + 1).asInstanceOf[PSDNodeLayer]
+      $(next.nodeName).focus().send(this)
+    } catch {
+      case t: Throwable => println(t.getMessage)
+    }
+  })).send(nodeName)
 
   nodeName.focusEvent.on {
     case evt => node.preview.outline(Some(node))
@@ -252,11 +274,11 @@ class PSDNodeLayer(val node: PreviewNode) extends tag.Div {
 
   visibility.changeEvent := RealtimeEvent()
 
-  visibility.checked.change.on {
-    case evt => if (visibility.checked()) {
-      node.style.display := Display.Block
-    } else {
+  visibility.style.visibility.change.on {
+    case evt => if (evt.newValue == Visibility.Hidden) {
       node.style.display := Display.None
+    } else {
+      node.style.display := Display.Block
     }
   }
 
@@ -298,15 +320,16 @@ class PreviewText(val entry: JsonValue, val preview: PSDPreviewPage) extends tag
   val value = text.getString("value")
   val font = text.get("font")
   val fontName = font.getString("name")
-  val (fontFamilySimple, fontWeight) = fontName match {
+  val (fontFamilySimple, fontWeightSimple) = fontName match {
     case s if s.indexOf('-') != -1 => (cleanFamily(s.substring(0, s.lastIndexOf('-'))), s.substring(s.lastIndexOf('-') + 1))
     case s => (cleanFamily(s), "Normal")
   }
-  val fontFamily = fontFamilySimple match {
+  val fontFamily = fontFamilySimple
+  val fontWeight = fontWeightSimple match {
     case "Semibold" => "SemiBold"
     case s => s
   }
-  val fontWeightValue = fontWeight.toLowerCase match {
+  val fontWeightValue = fontWeightSimple.toLowerCase match {
     case "ultralight" => 100
     case "extralight" => 200
     case "light" => 300
