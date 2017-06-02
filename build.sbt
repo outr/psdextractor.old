@@ -6,12 +6,12 @@ organization := "com.outr"
 
 version := "0.1-SNAPSHOT"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.11"
 
 seq(Revolver.settings: _*)
 
-libraryDependencies += "org.hyperscala" %% "hyperscala-ui" % "0.10.1-SNAPSHOT"
+libraryDependencies += "org.hyperscala" %% "hyperscala-ui" % "0.10.1"
 
-libraryDependencies += "com.outr.net" %% "outrnet-jetty" % "1.1.5-SNAPSHOT"
+libraryDependencies += "com.outr.net" %% "outrnet-jetty" % "1.1.6"
 
 libraryDependencies += "com.badlogicgames.gdx" % "gdx" % "1.6.0"
